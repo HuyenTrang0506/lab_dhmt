@@ -1,4 +1,4 @@
-#include <GL/glut.h>  
+#include <GL/glut.h>
 #include <vector>
 #include <cmath>
 #include <string>
@@ -11,12 +11,17 @@ float rotationY = 0.0f;
 float rotationY1 = 0.0f;
 float rotationY2 = 0.0f;
 float rotationY3 = 0.0f;
+float scale = 1.0f; // Bi?n scale
+
+bool wireframeMode = false; // Bi?n ki?m tra ch? d? wireframe
+bool orthographicMode = false; // Bi?n ki?m tra ch? d? chi?u song song
+bool useGouraud = false; // Bi?n ki?m tra ch? d? d? bóng Gouraud
+
 
 // Structure to store vector coordinates
 struct Vector3D {
     float x, y, z;
     Vector3D(float _x = 0, float _y = 0, float _z = 0) : x(_x), y(_y), z(_z) {}
-
 
     void normalize() {
         float length = sqrt(x * x + y * y + z * z);
@@ -310,6 +315,8 @@ struct Shape {
         }
         glEnd();
     }
+
+  
 };
 
 void renderScene() {
@@ -346,7 +353,9 @@ void renderScene() {
     sphere1.material = Material(
         Vector3D(0xDF / 255.0f, 0x61 / 255.0f, 0x49 / 255.0f), // Coral Blush 
         Vector3D(0xF4 / 255.0f, 0x90 / 255.0f, 0x69 / 255.0f)  // Fuzzy Peach 
-    );sphere2.initializeSphere(0.6f, 15, 20);
+    );
+
+    sphere2.initializeSphere(0.6f, 15, 20);
     sphere2.material = Material(
         Vector3D(0x70 / 255.0f, 0x82 / 255.0f, 0x40 / 255.0f), // Moss Green 
         Vector3D(0xAB / 255.0f, 0xBA / 255.0f, 0x72 / 255.0f)  // Sage 
@@ -404,19 +413,26 @@ void renderScene() {
     cylinder5.applyCombinedTransformation(0.0f, 0.0f, 0.0f, rotationX, rotationY);
 
     // Render the shapes
-    cylinder1.renderLambert();
-    cylinder2.renderLambert();
-    cylinder3.renderLambert();
-    cylinder4.renderLambert();
-    cylinder5.renderLambert();
-    polyhedron1.renderLambert();
-    polyhedron2.renderLambert();
-    polyhedron3.renderLambert();
-    polyhedron4.renderLambert();
-    sphere1.renderLambert();
-    sphere2.renderLambert();
-    sphere3.renderLambert();
+    if (wireframeMode) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // Chuy?n sang ch? d? wireframe
+    }
+    else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Chuy?n sang ch? d? solid
+    }
 
+        cylinder1.renderLambert();
+        cylinder2.renderLambert();
+        cylinder3.renderLambert();
+        cylinder4.renderLambert();
+        cylinder5.renderLambert();
+        polyhedron1.renderLambert();
+        polyhedron2.renderLambert();
+        polyhedron3.renderLambert();
+        polyhedron4.renderLambert();
+        sphere1.renderLambert();
+        sphere2.renderLambert();
+        sphere3.renderLambert();
+    
 }
 
 // Display function
@@ -424,13 +440,13 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    // Set camera position
     gluLookAt(0.0f, 0.0f, 10.0f,    // Camera position
         0.0f, 0.0f, 0.0f,      // Look-at point
         0.0f, 1.0f, 0.0f);     // Up vector
 
+  
+    glScalef(scale, scale, scale);
     renderScene();
-
     glutSwapBuffers();
 }
 
@@ -469,18 +485,41 @@ void reshape(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
+    if (orthographicMode) {
+       
+        glOrtho(-10, 10, -10, 10, -100, 100);
+    }
+    else {
+       
+        gluPerspective(80.0f, (float)w / h, 0.1f, 100.0f);
+    }
 
-    // Adjust the field of view (fov) to expand the view
-    gluPerspective(80.0f, (float)w / h, 0.1f, 100.0f); // Increased fov from 45.0f to 60.0f
     glMatrixMode(GL_MODELVIEW);
 }
 
-// Placeholder for keyboard function (you'll need to implement this)
 void keyboard(unsigned char key, int x, int y) {
-    // Handle keyboard input here (e.g., exit on ESC key)
-    if (key == 27) {  // ESC key
+   
+    if (key == 27) {  
         exit(0);
     }
+    else if (key == 'w' || key == 'W') {
+        wireframeMode = !wireframeMode;
+        glutPostRedisplay();
+    }
+    else if (key == 'o' || key == 'O') {
+        orthographicMode = !orthographicMode;
+        reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)); 
+    }
+    else if (key == '+' || key == '=') {
+        scale += 0.1f; 
+        glutPostRedisplay();
+    }
+    else if (key == '-' || key == '_') {
+        scale -= 0.1f; 
+        if (scale < 0.1f) scale = 0.1f; 
+        glutPostRedisplay();
+    }
+  
 }
 
 int main(int argc, char** argv) {
@@ -497,7 +536,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutMotionFunc(motion);
-    glutKeyboardFunc(keyboard); 
+    glutKeyboardFunc(keyboard);
     glutIdleFunc(idle);
     glutMainLoop();
     return 0;
