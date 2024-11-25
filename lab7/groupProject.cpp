@@ -11,14 +11,11 @@ float rotationY = 0.0f;
 float rotationY1 = 0.0f;
 float rotationY2 = 0.0f;
 float rotationY3 = 0.0f;
-float scale = 1.0f; // Bi?n scale
+float scale = 1.0f; 
 
-bool wireframeMode = false; // Bi?n ki?m tra ch? d? wireframe
-bool orthographicMode = false; // Bi?n ki?m tra ch? d? chi?u song song
-bool useGouraud = false; // Bi?n ki?m tra ch? d? d? bóng Gouraud
+bool wireframeMode = true; 
+bool orthographicMode = false; 
 
-
-// Structure to store vector coordinates
 struct Vector3D {
     float x, y, z;
     Vector3D(float _x = 0, float _y = 0, float _z = 0) : x(_x), y(_y), z(_z) {}
@@ -75,7 +72,6 @@ struct Vertex {
         : position(pos), normal(norm), color(col) {}
 };
 
-// Structure to store material information
 struct Material {
     Vector3D ambient;
     Vector3D diffuse;
@@ -88,8 +84,6 @@ struct Material {
         float shin = 32.0f)
         : ambient(amb), diffuse(diff), specular(spec), shininess(shin) {}
 };
-
-// multiply two 4x4 matrices
 void multiplyMatrices(const float mat1[16], const float mat2[16], float result[16]) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -100,16 +94,44 @@ void multiplyMatrices(const float mat1[16], const float mat2[16], float result[1
         }
     }
 }
+void setPerspective(GLfloat fovY, GLfloat aspect, GLfloat nearZ, GLfloat farZ) {
+    GLfloat f = 1.0f / tan(fovY * M_PI / 360.0f);
+    GLfloat matrix[16] = {
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (farZ + nearZ) / (nearZ - farZ), -1,
+        0, 0, (2 * farZ * nearZ) / (nearZ - farZ), 0
+    };
+    glMultMatrixf(matrix);
+}
+
+
+void setOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearZ, GLfloat farZ) {
+    GLfloat matrix[16] = {
+        2 / (right - left), 0, 0, -(right + left) / (right - left),
+        0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom),
+        0, 0, -2 / (farZ - nearZ), -(farZ + nearZ) / (farZ - nearZ),
+        0, 0, 0, 1
+    };
+    glMultMatrixf(matrix); 
+}
+void scaleMatrix(float scaleX, float scaleY, float scaleZ) {
+     GLfloat matrix[16] = {
+        scaleX, 0, 0, 0,
+	    0, scaleY, 0, 0,
+	    0, 0, scaleZ, 0,
+	    0, 0, 0, 1
+    };
+     glMultMatrixf(matrix); 
+}
 
 Vector3D lightPos(5.0f, 5.0f, 5.0f);
-
 struct Shape {
     std::vector<Vertex> vertices;
     std::vector<int> indices;
     Material material;
 
 
-    // Initialize Polyhedron
     void initializePolyhedron(float radius) {
         vertices.clear();
         indices.clear();
@@ -135,7 +157,7 @@ struct Shape {
             {1, 5, 3}, {1, 2, 5}, {1, 4, 2}, {1, 3, 4}
         };
 
-        // Convert triangle faces to indices
+      
         for (const auto& face : faces) {
             for (int idx : face) {
                 indices.push_back(idx);
@@ -149,9 +171,9 @@ struct Shape {
         indices.clear();
 
         for (int i = 0; i <= stacks; ++i) {
-            float phi = M_PI * float(i) / float(stacks);
+            float phi = M_PI * float(i) / float(stacks);//vi do
             for (int j = 0; j <= slices; ++j) {
-                float theta = 2.0f * M_PI * float(j) / float(slices);
+                float theta = 2.0f * M_PI * float(j) / float(slices);//kinh do
 
                 float x = radius * sin(phi) * cos(theta);
                 float y = radius * cos(phi);
@@ -188,7 +210,7 @@ struct Shape {
 
         float height = y_end - y_begin;
         int segments = static_cast<int>(20 * sqrt(radius));
-        // Generate vertices for the side of the cylinder
+        
         for (int i = 0; i <= segments; ++i) {
             float theta = 2.0f * M_PI * float(i) / float(segments);
             float x = radius * cos(theta);
@@ -398,7 +420,6 @@ void renderScene() {
         Vector3D(0xA7 / 255.0f, 0x5F / 255.0f, 0x37 / 255.0f)  // Copper 
     );
 
-    // Apply the combined transformation 
     polyhedron1.applyCombinedTransformation(0.0f, 0.0f, 0.0f, rotationX, rotationY);
     polyhedron2.applyCombinedTransformation(4.0f, 0.0f, -0.25f, rotationX, rotationY2);
     polyhedron3.applyCombinedTransformation(-4.0f, -2.25f, 0.0f, rotationX, rotationY1);
@@ -412,12 +433,11 @@ void renderScene() {
     cylinder4.applyCombinedTransformation(0.0f, 0.0f, 0.0f, rotationX, -rotationY2);
     cylinder5.applyCombinedTransformation(0.0f, 0.0f, 0.0f, rotationX, rotationY);
 
-    // Render the shapes
     if (wireframeMode) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // Chuy?n sang ch? d? wireframe
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
     }
     else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Chuy?n sang ch? d? solid
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
         cylinder1.renderLambert();
@@ -435,7 +455,6 @@ void renderScene() {
     
 }
 
-// Display function
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
@@ -445,19 +464,19 @@ void display() {
         0.0f, 1.0f, 0.0f);     // Up vector
 
   
-    glScalef(scale, scale, scale);
+    scaleMatrix(scale,scale,scale);
     renderScene();
     glutSwapBuffers();
 }
 
 void idle() {
 
-    rotationY += 0.1f; // Increment rotation angle
+    rotationY += 0.1f; 
     rotationY1 += 0.25f;
     rotationY2 += 0.08f;
     rotationY3 += 0.15f;
-    if (rotationY >= 360.0f) rotationY -= 360.0f; // Keep angle within [0, 360]
-    glutPostRedisplay(); // Request redraw
+    if (rotationY >= 360.0f) rotationY -= 360.0f; 
+    glutPostRedisplay(); 
 }
 
 // Mouse motion handler
@@ -485,14 +504,14 @@ void reshape(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
+   
     if (orthographicMode) {
-       
-        glOrtho(-10, 10, -10, 10, -100, 100);
+        setOrtho(-10, 10, -10, 10, -100, 100); // S? d?ng hàm setOrtho
     }
     else {
-       
-        gluPerspective(80.0f, (float)w / h, 0.1f, 100.0f);
+        setPerspective(80.0f, (float)w / h, 0.1f, 100.0f); // S? d?ng hàm setPerspective
     }
+    
 
     glMatrixMode(GL_MODELVIEW);
 }
